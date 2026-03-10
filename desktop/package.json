@@ -1,0 +1,11 @@
+{
+  "name": "bangumi-taste-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "bin": "server.js",
+  "pkg": {
+    "assets": ["www/**/*"],
+    "targets": ["node18-win-x64"],
+    "outputPath": "dist"
+  }
+}
