@@ -4,6 +4,8 @@ interface BgmSettings {
   authMode: "username" | "token";
   username: string;
   token: string;
+  analyzeAnime: boolean;
+  analyzeGame: boolean;
 }
 
 interface Props {
@@ -18,6 +20,37 @@ export default function BangumiSettings({ settings, onChange }: Props) {
 
   return (
     <div>
+      {/* Category Selection */}
+      <div className="mb-5">
+        <label className="block text-sm font-bold mb-2">分析类别</label>
+        <div className="flex gap-3">
+          {([
+            { key: "analyzeAnime" as const, icon: "🎬", label: "动画" },
+            { key: "analyzeGame" as const, icon: "🎮", label: "游戏" },
+          ]).map((cat) => {
+            const active = settings[cat.key];
+            return (
+              <button
+                key={cat.key}
+                type="button"
+                onClick={() => update({ [cat.key]: !active })}
+                className={`
+                  flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium
+                  transition-all duration-200 cursor-pointer select-none
+                  ${active
+                    ? "bg-primary text-white shadow-lg shadow-primary/30 border border-transparent"
+                    : "bg-transparent border border-card-border text-muted hover:border-primary/50 hover:text-foreground"
+                  }
+                `}
+              >
+                <span className="text-base">{cat.icon}</span>
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <h3 className="text-sm font-semibold mb-3 text-foreground">Bangumi 账户</h3>
 
       {/* Auth Mode Toggle */}

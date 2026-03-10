@@ -27,10 +27,12 @@ export default function TasteReport({ analysis, username, type }: Props) {
           {analysis.tasteTags.map((tag, i) => (
             <div
               key={i}
-              className="group relative bg-accent border border-primary/20 rounded-full px-4 py-2 cursor-default"
+              className="group relative bg-accent border border-primary/20 rounded-full px-4 py-2 cursor-default whitespace-nowrap"
+              tabIndex={0}
             >
               <span className="text-sm font-medium text-primary">{tag.label}</span>
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-foreground text-background text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-foreground text-background text-xs rounded-lg opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10
+                max-sm:left-0 max-sm:translate-x-0 max-sm:whitespace-normal max-sm:max-w-[200px]">
                 {tag.description}
               </div>
             </div>

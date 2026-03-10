@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import LLMSettings from "@/components/LLMSettings";
 import BangumiSettings from "@/components/BangumiSettings";
@@ -26,6 +26,8 @@ interface BgmSettings {
   authMode: AuthMode;
   username: string;
   token: string;
+  analyzeAnime: boolean;
+  analyzeGame: boolean;
 }
 
 interface CachedResult {
@@ -55,7 +57,7 @@ function loadLLMConfig(): LLMConfig {
 }
 
 function loadBgmSettings(): BgmSettings {
-  return lsLoad(LS_BGM_KEY, { authMode: "username" as const, username: "", token: "" });
+  return lsLoad(LS_BGM_KEY, { authMode: "username" as const, username: "", token: "", analyzeAnime: true, analyzeGame: true });
 }
 
 function getCacheKey(username: string) {
@@ -108,7 +110,7 @@ async function fetchAllCollections(
 
 // ---- Component ----
 
-const BGM_DEFAULTS: BgmSettings = { authMode: "username", username: "", token: "" };
+const BGM_DEFAULTS: BgmSettings = { authMode: "username", username: "", token: "", analyzeAnime: true, analyzeGame: true };
 const LLM_DEFAULTS: LLMConfig = { provider: "custom", apiKey: "", model: "", baseUrl: "" };
 
 export default function Home() {
@@ -127,6 +129,8 @@ export default function Home() {
   const [gameAnalysis, setGameAnalysis] = useState<TasteAnalysis | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("anime");
+  const [exporting, setExporting] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const pickDefaultTab = (anime: TasteAnalysis | null, game: TasteAnalysis | null): TabKey => {
     if (anime) return "anime";
@@ -157,6 +161,63 @@ export default function Home() {
       }
     }
     setHydrated(true);
+
+    // DEBUG: load mock report for testing export (remove before release)
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("mock")) {
+      const mockAnalysis: TasteAnalysis = {
+        summary: "你是一个偏好深度叙事与世界观构建的观众，对制作精良的作品有着敏锐的鉴赏力。你倾向于选择具有独特美学风格和复杂角色关系的作品，而非单纯的娱乐向内容。",
+        tasteTags: [
+          { label: "叙事控", description: "偏好故事驱动的深度作品" },
+          { label: "美学派", description: "对视觉表现和演出有较高要求" },
+          { label: "世界观爱好者", description: "喜欢宏大且自洽的世界设定" },
+          { label: "慢热型", description: "能接受前期铺垫较长的作品" },
+        ],
+        genrePreferences: [
+          { genre: "科幻", score: 92, count: 18 },
+          { genre: "奇幻", score: 85, count: 15 },
+          { genre: "悬疑", score: 78, count: 12 },
+          { genre: "日常", score: 60, count: 8 },
+          { genre: "运动", score: 35, count: 3 },
+        ],
+        ratingAnalysis: {
+          average: 7.4,
+          median: 8,
+          tendency: "偏严格",
+          description: "你的评分普遍低于大众平均，说明你对作品质量有较高的标准。",
+        },
+        uniqueTraits: [
+          "对冷门佳作有独到的发现眼光",
+          "评分标准始终如一，不随大众波动",
+          "偏好原创作品胜过改编作品",
+        ],
+        hiddenGems: [
+          { name: "少女终末旅行", reason: "你给出了9分高评价，但该作品关注度偏低" },
+        ],
+        recommendations: [
+          { name: "来自新世界", reason: "深度叙事+世界观构建，符合你的核心偏好" },
+          { name: "奇巧计程车", reason: "精巧的群像剧本，悬疑感十足" },
+          { name: "乒乓", reason: "独特美学风格，汤浅政明代表作" },
+        ],
+      };
+      setUser({
+        id: 0, username: "test_user", nickname: "测试用户",
+        avatar: { large: "", medium: "", small: "" }, sign: "",
+      });
+      setAnimeCollections(Array.from({ length: 42 }, (_, i) => ({
+        subject_id: i, subject_type: 2, rate: Math.floor(Math.random() * 4) + 6,
+        type: 2, comment: "", tags: [], updated_at: `2024-${String((i % 12) + 1).padStart(2, "0")}-01`,
+        subject: {
+          id: i, type: 2, name: `Anime ${i}`, name_cn: `动画${i}`, summary: "",
+          date: `2024-${String((i % 12) + 1).padStart(2, "0")}-01`, score: Math.random() * 2 + 6,
+          rank: i * 10, collection_total: 1000, eps: 12,
+        },
+      })));
+      setGameCollections([]);
+      setAnimeAnalysis(mockAnalysis);
+      setGameAnalysis(null);
+      setStage("done");
+      setActiveTab("anime");
+    }
   }, []);
 
   const handleBgmChange = useCallback((settings: BgmSettings) => {
@@ -170,7 +231,27 @@ export default function Home() {
   }, []);
 
   const inputValue = bgmSettings.authMode === "username" ? bgmSettings.username : bgmSettings.token;
-  const canSubmit = inputValue.trim() && stage !== "fetching" && stage !== "analyzing";
+  const canSubmit = inputValue.trim() && stage !== "fetching" && stage !== "analyzing" && (bgmSettings.analyzeAnime || bgmSettings.analyzeGame);
+
+  const handleExport = async () => {
+    if (!reportRef.current) return;
+    setExporting(true);
+    try {
+      const { exportReportAsImage } = await import("@/lib/exportImage");
+      await exportReportAsImage({
+        reportEl: reportRef.current,
+        title: effectiveTab === "anime" ? "动画品味报告" : "游戏品味报告",
+        nickname: user?.nickname || bgmSettings.username,
+        avatarUrl: user?.avatar?.medium,
+        animeCount: animeCollections.length,
+        gameCount: gameCollections.length,
+      });
+    } catch (e) {
+      console.error("Export failed:", e);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleAnalyze = async (forceRefresh = false) => {
     const { authMode, username, token: bgmToken } = bgmSettings;
@@ -220,25 +301,31 @@ export default function Home() {
       }
       setUser(userData);
 
-      setProgress("正在获取动画收藏...");
-      const anime = await fetchAllCollections(resolvedUsername, 2, token);
+      let anime: BangumiCollection[] = [];
+      let games: BangumiCollection[] = [];
+
+      if (bgmSettings.analyzeAnime) {
+        setProgress("正在获取动画收藏...");
+        anime = await fetchAllCollections(resolvedUsername, 2, token);
+      }
       setAnimeCollections(anime);
 
-      setProgress("正在获取游戏收藏...");
-      const games = await fetchAllCollections(resolvedUsername, 4, token);
+      if (bgmSettings.analyzeGame) {
+        setProgress("正在获取游戏收藏...");
+        games = await fetchAllCollections(resolvedUsername, 4, token);
+      }
       setGameCollections(games);
 
       if (anime.length === 0 && games.length === 0) {
-        throw new Error("该用户没有动画或游戏收藏数据");
+        throw new Error("所选类别没有收藏数据");
       }
 
       const parts = [];
       if (anime.length > 0) parts.push(`${anime.length} 部动画`);
-      if (games.length > 0) parts.push(`${games.length} 部游戏`);
-      setProgress(`获取完成: ${parts.join(", ")}。正在分别进行 AI 分析...`);
+      if (games.length > 0) parts.push(`${games.length} 款游戏`);
+      setProgress(`获取完成: ${parts.join(", ")}。正在进行 AI 分析...`);
       setStage("analyzing");
 
-      // Call LLM directly from browser
       const [animeResult, gameResult] = await Promise.all([
         anime.length > 0
           ? callLLM(buildAnimeAnalysisPrompt(resolvedUsername, anime), llmConfig)
@@ -439,12 +526,23 @@ export default function Home() {
             {/* Active Tab Content */}
             {currentAnalysis && (
               <div key={effectiveTab} className="animate-fade-in">
-                <TasteReport analysis={currentAnalysis} username={user?.nickname || bgmSettings.username} type={currentType} />
-                <div className="mt-6">
-                  <Recommendations recommendations={currentAnalysis.recommendations} type={currentType} />
+                <div ref={reportRef}>
+                  <TasteReport analysis={currentAnalysis} username={user?.nickname || bgmSettings.username} type={currentType} />
+                  <div className="mt-6">
+                    <Recommendations recommendations={currentAnalysis.recommendations} type={currentType} />
+                  </div>
+                  <div className="mt-6">
+                    <Charts collections={currentCollections} analysis={currentAnalysis} type={currentType} />
+                  </div>
                 </div>
-                <div className="mt-6">
-                  <Charts collections={currentCollections} analysis={currentAnalysis} />
+                <div className="mt-4 flex justify-center">
+                  <button
+                    onClick={handleExport}
+                    disabled={exporting}
+                    className="px-6 py-2.5 bg-primary text-white rounded-xl font-medium text-sm hover:opacity-90 transition-all disabled:opacity-40 cursor-pointer shadow-lg shadow-primary/20"
+                  >
+                    {exporting ? "导出中..." : "导出我的报告"}
+                  </button>
                 </div>
               </div>
             )}

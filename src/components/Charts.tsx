@@ -17,7 +17,6 @@ import {
   PolarRadiusAxis,
   Radar,
 } from "recharts";
-import type { PieLabelRenderProps } from "recharts";
 import type { BangumiCollection, TasteAnalysis } from "@/lib/types";
 
 const COLORS = [
@@ -36,10 +35,12 @@ const TOOLTIP_STYLE = {
 interface Props {
   collections: BangumiCollection[];
   analysis: TasteAnalysis;
+  type?: "动画" | "游戏";
 }
 
-export default function Charts({ collections, analysis }: Props) {
+export default function Charts({ collections, analysis, type }: Props) {
   const rated = collections.filter((c) => c.rate > 0);
+  const isGame = type === "游戏";
 
   // Rating distribution
   const ratingDist = Array.from({ length: 10 }, (_, i) => ({
@@ -49,9 +50,9 @@ export default function Charts({ collections, analysis }: Props) {
 
   // Status distribution
   const statusLabels: Record<number, string> = {
-    1: "想看/想玩",
-    2: "看过/玩过",
-    3: "在看/在玩",
+    1: isGame ? "想玩" : "想看",
+    2: isGame ? "玩过" : "看过",
+    3: isGame ? "在玩" : "在看",
     4: "搁置",
     5: "抛弃",
   };
@@ -105,10 +106,10 @@ export default function Charts({ collections, analysis }: Props) {
         <section className="bg-card border border-card-border rounded-2xl p-6">
           <h2 className="text-lg font-bold mb-4">评分分布</h2>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={ratingDist}>
+            <BarChart data={ratingDist} margin={{ left: -10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />
               <XAxis dataKey="rating" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} width={30} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} name="作品数" />
             </BarChart>
@@ -117,28 +118,37 @@ export default function Charts({ collections, analysis }: Props) {
 
         <section className="bg-card border border-card-border rounded-2xl p-6">
           <h2 className="text-lg font-bold mb-4">收藏状态</h2>
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie
-                data={statusDist}
-                cx="50%"
-                cy="50%"
-                innerRadius={45}
-                outerRadius={80}
-                dataKey="value"
-                label={(props: PieLabelRenderProps) =>
-                  `${props.name ?? ""} ${((Number(props.percent) || 0) * 100).toFixed(0)}%`
-                }
-                labelLine={false}
-                fontSize={11}
-              >
-                {statusDist.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="flex items-center">
+            <div className="flex-1">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={statusDist}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={85}
+                    dataKey="value"
+                    label={false}
+                    labelLine={false}
+                  >
+                    {statusDist.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-col gap-1.5 flex-shrink-0">
+              {statusDist.map((item, i) => (
+                <div key={i} className="flex items-center gap-1.5 text-xs text-muted">
+                  <span className="w-2 h-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
+                  <span>{item.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
       </div>
 
@@ -150,7 +160,7 @@ export default function Charts({ collections, analysis }: Props) {
             <RadarChart data={genreData}>
               <PolarGrid stroke="var(--card-border)" />
               <PolarAngleAxis dataKey="genre" tick={{ fontSize: 11 }} />
-              <PolarRadiusAxis tick={{ fontSize: 10 }} domain={[0, 100]} />
+              <PolarRadiusAxis tick={false} axisLine={false} domain={[0, 100]} />
               <Radar
                 dataKey="score"
                 stroke="var(--primary)"
@@ -169,10 +179,10 @@ export default function Charts({ collections, analysis }: Props) {
         <section className="bg-card border border-card-border rounded-2xl p-6">
           <h2 className="text-lg font-bold mb-4">收藏时间线 (近24月)</h2>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={timeline}>
+            <BarChart data={timeline} margin={{ left: -10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />
               <XAxis dataKey="date" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={60} />
-              <YAxis tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} width={30} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Bar dataKey="count" fill="var(--primary-light)" radius={[4, 4, 0, 0]} name="新增收藏" />
             </BarChart>
