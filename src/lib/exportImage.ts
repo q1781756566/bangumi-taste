@@ -59,9 +59,9 @@ export async function exportReportAsImage(opts: ExportOptions): Promise<void> {
   const rw = reportCanvas.width;
   const contentWidth = rw + PAD * 2;
   // Header: avatar/QR fill the row, 3 text lines beside avatar
-  const iconSize = 64 * SCALE; // avatar & QR both this size
-  const qrLabelH = 18 * SCALE; // space for "扫码尝试" below QR
-  const headerH = iconSize + qrLabelH + 12 * SCALE; // icon + label + padding
+  const avatarSize = 64 * SCALE;
+  const qrSize = 56 * SCALE;
+  const headerH = avatarSize + 16 * SCALE; // avatar drives header height
   const totalH = PAD + headerH + reportCanvas.height + PAD;
 
   const canvas = document.createElement("canvas");
@@ -82,12 +82,12 @@ export async function exportReportAsImage(opts: ExportOptions): Promise<void> {
       const avatarImg = await loadImg(avatarDataUrl);
       ctx.save();
       ctx.beginPath();
-      ctx.arc(headerX + iconSize / 2, iconY + iconSize / 2, iconSize / 2, 0, Math.PI * 2);
+      ctx.arc(headerX + avatarSize / 2, iconY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
       ctx.closePath();
       ctx.clip();
-      ctx.drawImage(avatarImg, headerX, iconY, iconSize, iconSize);
+      ctx.drawImage(avatarImg, headerX, iconY, avatarSize, avatarSize);
       ctx.restore();
-      headerX += iconSize + 14 * SCALE;
+      headerX += avatarSize + 14 * SCALE;
     } catch { /* skip */ }
   }
 
@@ -98,7 +98,7 @@ export async function exportReportAsImage(opts: ExportOptions): Promise<void> {
   const line3Size = 12;
   const lineGap = 6;
   const totalTextH = (line1Size + line2Size + line3Size + lineGap * 2) * SCALE;
-  const textStartY = iconY + (iconSize - totalTextH) / 2;
+  const textStartY = iconY + (avatarSize - totalTextH) / 2;
 
   ctx.fillStyle = "#6b7280";
   ctx.font = `${line1Size * SCALE}px system-ui, sans-serif`;
@@ -120,19 +120,19 @@ export async function exportReportAsImage(opts: ExportOptions): Promise<void> {
     ctx.fillText(statsText, headerX, textStartY + totalTextH);
   }
 
-  // ---- Right: QR code ----
-  const qrX = contentWidth - PAD - iconSize;
+  // ---- Right: QR code (vertically centered with avatar) + label below ----
+  const qrX = contentWidth - PAD - qrSize;
+  const qrY = iconY;
   try {
     const qrImg = await loadImg(qrDataUrl);
-    ctx.drawImage(qrImg, qrX, iconY, iconSize, iconSize);
+    ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
   } catch { /* skip */ }
 
-  // ---- "扫码尝试" centered below QR ----
   ctx.fillStyle = "#9ca3af";
   ctx.font = `${10 * SCALE}px system-ui, sans-serif`;
   const qrLabel = "扫码尝试";
   const qrLabelW = ctx.measureText(qrLabel).width;
-  ctx.fillText(qrLabel, qrX + (iconSize - qrLabelW) / 2, iconY + iconSize + 14 * SCALE);
+  ctx.fillText(qrLabel, qrX + (qrSize - qrLabelW) / 2, qrY + qrSize + 13 * SCALE);
 
   // Header divider
   y += headerH;
