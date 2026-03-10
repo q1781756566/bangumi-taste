@@ -54,6 +54,7 @@ export default function BangumiSettings({ settings, onChange }: Props) {
             placeholder="Bangumi 用户名"
             className="w-full px-3 py-2 rounded-lg border border-card-border bg-card text-foreground text-sm"
           />
+          <p className="text-xs text-muted mt-1">请填写个人主页 URL（bgm.tv/user/xxx）中的 ID，而非昵称</p>
         </div>
       ) : (
         <div>
