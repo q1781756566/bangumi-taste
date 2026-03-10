@@ -163,60 +163,70 @@ export default function Home() {
     setHydrated(true);
 
     // DEBUG: load mock report for testing export (remove before release)
+    // ?mock tries to load any cached result from localStorage first
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("mock")) {
-      const mockAnalysis: TasteAnalysis = {
-        summary: "你是一个偏好深度叙事与世界观构建的观众，对制作精良的作品有着敏锐的鉴赏力。你倾向于选择具有独特美学风格和复杂角色关系的作品，而非单纯的娱乐向内容。",
-        tasteTags: [
-          { label: "叙事控", description: "偏好故事驱动的深度作品" },
-          { label: "美学派", description: "对视觉表现和演出有较高要求" },
-          { label: "世界观爱好者", description: "喜欢宏大且自洽的世界设定" },
-          { label: "慢热型", description: "能接受前期铺垫较长的作品" },
-        ],
-        genrePreferences: [
-          { genre: "科幻", score: 92, count: 18 },
-          { genre: "奇幻", score: 85, count: 15 },
-          { genre: "悬疑", score: 78, count: 12 },
-          { genre: "日常", score: 60, count: 8 },
-          { genre: "运动", score: 35, count: 3 },
-        ],
-        ratingAnalysis: {
-          average: 7.4,
-          median: 8,
-          tendency: "偏严格",
-          description: "你的评分普遍低于大众平均，说明你对作品质量有较高的标准。",
-        },
-        uniqueTraits: [
-          "对冷门佳作有独到的发现眼光",
-          "评分标准始终如一，不随大众波动",
-          "偏好原创作品胜过改编作品",
-        ],
-        hiddenGems: [
-          { name: "少女终末旅行", reason: "你给出了9分高评价，但该作品关注度偏低" },
-        ],
-        recommendations: [
-          { name: "来自新世界", reason: "深度叙事+世界观构建，符合你的核心偏好" },
-          { name: "奇巧计程车", reason: "精巧的群像剧本，悬疑感十足" },
-          { name: "乒乓", reason: "独特美学风格，汤浅政明代表作" },
-        ],
-      };
-      setUser({
-        id: 0, username: "test_user", nickname: "测试用户",
-        avatar: { large: "", medium: "", small: "" }, sign: "",
-      });
-      setAnimeCollections(Array.from({ length: 42 }, (_, i) => ({
-        subject_id: i, subject_type: 2, rate: Math.floor(Math.random() * 4) + 6,
-        type: 2, comment: "", tags: [], updated_at: `2024-${String((i % 12) + 1).padStart(2, "0")}-01`,
-        subject: {
-          id: i, type: 2, name: `Anime ${i}`, name_cn: `动画${i}`, summary: "",
-          date: `2024-${String((i % 12) + 1).padStart(2, "0")}-01`, score: Math.random() * 2 + 6,
-          rank: i * 10, collection_total: 1000, eps: 12,
-        },
-      })));
-      setGameCollections([]);
-      setAnimeAnalysis(mockAnalysis);
-      setGameAnalysis(null);
-      setStage("done");
-      setActiveTab("anime");
+      let found = false;
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith(LS_CACHE_PREFIX)) {
+            const cached: CachedResult = JSON.parse(localStorage.getItem(key)!);
+            if (cached?.user && (cached.animeAnalysis || cached.gameAnalysis)) {
+              setUser(cached.user);
+              setAnimeCollections(cached.animeCollections ?? []);
+              setGameCollections(cached.gameCollections ?? []);
+              setAnimeAnalysis(cached.animeAnalysis);
+              setGameAnalysis(cached.gameAnalysis);
+              setStage("done");
+              setActiveTab(pickDefaultTab(cached.animeAnalysis, cached.gameAnalysis));
+              found = true;
+              break;
+            }
+          }
+        }
+      } catch { /* ignore */ }
+
+      if (!found) {
+        // Fallback: hardcoded mock data
+        const mockAnalysis: TasteAnalysis = {
+          summary: "你是一个偏好深度叙事与世界观构建的观众，对制作精良的作品有着敏锐的鉴赏力。",
+          tasteTags: [
+            { label: "叙事控", description: "偏好故事驱动的深度作品" },
+            { label: "美学派", description: "对视觉表现和演出有较高要求" },
+            { label: "世界观爱好者", description: "喜欢宏大且自洽的世界设定" },
+            { label: "慢热型", description: "能接受前期铺垫较长的作品" },
+          ],
+          genrePreferences: [
+            { genre: "科幻", score: 92, count: 18 },
+            { genre: "奇幻", score: 85, count: 15 },
+            { genre: "悬疑", score: 78, count: 12 },
+            { genre: "日常", score: 60, count: 8 },
+            { genre: "运动", score: 35, count: 3 },
+          ],
+          ratingAnalysis: {
+            average: 7.4, median: 8, tendency: "偏严格",
+            description: "你的评分普遍低于大众平均，说明你对作品质量有较高的标准。",
+          },
+          uniqueTraits: ["对冷门佳作有独到的发现眼光", "评分标准始终如一", "偏好原创作品胜过改编作品"],
+          hiddenGems: [{ name: "少女终末旅行", reason: "你给出了9分高评价，但该作品关注度偏低" }],
+          recommendations: [
+            { name: "来自新世界", reason: "深度叙事+世界观构建，符合你的核心偏好" },
+            { name: "奇巧计程车", reason: "精巧的群像剧本，悬疑感十足" },
+            { name: "乒乓", reason: "独特美学风格，汤浅政明代表作" },
+          ],
+        };
+        setUser({ id: 0, username: "test_user", nickname: "测试用户", avatar: { large: "", medium: "", small: "" }, sign: "" });
+        setAnimeCollections(Array.from({ length: 42 }, (_, i) => ({
+          subject_id: i, subject_type: 2, rate: Math.floor(Math.random() * 4) + 6,
+          type: 2, comment: "", tags: [], updated_at: `2024-${String((i % 12) + 1).padStart(2, "0")}-01`,
+          subject: { id: i, type: 2, name: `Anime ${i}`, name_cn: `动画${i}`, summary: "", date: `2024-${String((i % 12) + 1).padStart(2, "0")}-01`, score: Math.random() * 2 + 6, rank: i * 10, collection_total: 1000, eps: 12 },
+        })));
+        setGameCollections([]);
+        setAnimeAnalysis(mockAnalysis);
+        setGameAnalysis(null);
+        setStage("done");
+        setActiveTab("anime");
+      }
     }
   }, []);
 
@@ -243,8 +253,8 @@ export default function Home() {
         title: effectiveTab === "anime" ? "动画品味报告" : "游戏品味报告",
         nickname: user?.nickname || bgmSettings.username,
         avatarUrl: user?.avatar?.medium,
-        animeCount: animeCollections.length,
-        gameCount: gameCollections.length,
+        animeCount: effectiveTab === "anime" ? animeCollections.length : 0,
+        gameCount: effectiveTab === "game" ? gameCollections.length : 0,
       });
     } catch (e) {
       console.error("Export failed:", e);
@@ -475,7 +485,9 @@ export default function Home() {
                 <div>
                   <div className="font-medium">{user.nickname}</div>
                   <div className="text-xs text-muted">
-                    @{user.username} | {animeCollections.length} 动画 | {gameCollections.length} 游戏
+                    @{user.username}
+                    {animeAnalysis && ` | ${animeCollections.length} 动画`}
+                    {gameAnalysis && ` | ${gameCollections.length} 游戏`}
                     {fromCache && " | 缓存结果"}
                   </div>
                 </div>

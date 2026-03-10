@@ -58,62 +58,87 @@ export async function exportReportAsImage(opts: ExportOptions): Promise<void> {
 
   const rw = reportCanvas.width;
   const contentWidth = rw + PAD * 2;
-  const headerH = 80 * SCALE;
-  const footerH = 90 * SCALE;
-  const totalH = PAD + headerH + reportCanvas.height + footerH + PAD;
+  // Header: avatar/QR fill the row, 3 text lines beside avatar
+  const iconSize = 64 * SCALE; // avatar & QR both this size
+  const headerH = iconSize + 16 * SCALE; // icon + top/bottom padding
+  const totalH = PAD + headerH + reportCanvas.height + PAD;
 
-  // Compose final image
   const canvas = document.createElement("canvas");
   canvas.width = contentWidth;
   canvas.height = totalH;
   const ctx = canvas.getContext("2d")!;
 
-  // Background
   ctx.fillStyle = BG;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   let y = PAD;
-
-  // ---- Header ----
-  const avatarSize = 48 * SCALE;
+  const iconY = y + 8 * SCALE; // vertical padding within header
   let headerX = PAD;
 
+  // ---- Left: avatar ----
   if (avatarDataUrl) {
     try {
       const avatarImg = await loadImg(avatarDataUrl);
-      // Draw circular avatar
       ctx.save();
       ctx.beginPath();
-      ctx.arc(headerX + avatarSize / 2, y + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+      ctx.arc(headerX + iconSize / 2, iconY + iconSize / 2, iconSize / 2, 0, Math.PI * 2);
       ctx.closePath();
       ctx.clip();
-      ctx.drawImage(avatarImg, headerX, y, avatarSize, avatarSize);
+      ctx.drawImage(avatarImg, headerX, iconY, iconSize, iconSize);
       ctx.restore();
-      headerX += avatarSize + 16 * SCALE;
+      headerX += iconSize + 14 * SCALE;
     } catch { /* skip */ }
   }
 
-  // "{nickname} 的"
+  // ---- 3 text lines beside avatar, vertically centered with icon ----
+  // Line 1: "{nickname} 的"
+  const line1Size = 16;
+  const line2Size = 26;
+  const line3Size = 12;
+  const lineGap = 6;
+  const totalTextH = (line1Size + line2Size + line3Size + lineGap * 2) * SCALE;
+  const textStartY = iconY + (iconSize - totalTextH) / 2;
+
   ctx.fillStyle = "#6b7280";
-  ctx.font = `${14 * SCALE}px system-ui, sans-serif`;
-  ctx.fillText(`${nickname} 的`, headerX, y + 20 * SCALE);
+  ctx.font = `${line1Size * SCALE}px system-ui, sans-serif`;
+  ctx.fillText(`${nickname} 的`, headerX, textStartY + line1Size * SCALE);
 
-  // Title
+  // Line 2: title (bold purple)
   ctx.fillStyle = "#6366f1";
-  ctx.font = `bold ${22 * SCALE}px system-ui, sans-serif`;
-  ctx.fillText(title, headerX, y + 48 * SCALE);
+  ctx.font = `bold ${line2Size * SCALE}px system-ui, sans-serif`;
+  ctx.fillText(title, headerX, textStartY + (line1Size + lineGap + line2Size) * SCALE);
 
-  // Stats (right aligned)
+  // Line 3: stats
   const statsText = [
     animeCount ? `${animeCount} 部动画` : "",
     gameCount ? `${gameCount} 款游戏` : "",
   ].filter(Boolean).join(" · ");
   if (statsText) {
-    ctx.fillStyle = "#64748b";
-    ctx.font = `${12 * SCALE}px system-ui, sans-serif`;
-    const tw = ctx.measureText(statsText).width;
-    ctx.fillText(statsText, contentWidth - PAD - tw, y + 30 * SCALE);
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = `${line3Size * SCALE}px system-ui, sans-serif`;
+    ctx.fillText(statsText, headerX, textStartY + totalTextH);
   }
+
+  // ---- Right: QR code ----
+  const qrX = contentWidth - PAD - iconSize;
+  try {
+    const qrImg = await loadImg(qrDataUrl);
+    ctx.drawImage(qrImg, qrX, iconY, iconSize, iconSize);
+  } catch { /* skip */ }
+
+  // ---- Text left of QR: "扫码生成你的品味报告" + "bangumi-taste" ----
+  const promoText = "扫码生成你的品味报告";
+  const subText = "bangumi-taste";
+  ctx.fillStyle = "#6b7280";
+  ctx.font = `${13 * SCALE}px system-ui, sans-serif`;
+  const promoW = ctx.measureText(promoText).width;
+  const subW = ctx.measureText(subText).width;
+  const rightTextW = Math.max(promoW, subW);
+  const rightTextX = qrX - rightTextW - 16 * SCALE;
+  ctx.fillText(promoText, rightTextX, iconY + iconSize / 2 - 2 * SCALE);
+  ctx.fillStyle = "#9ca3af";
+  ctx.font = `${11 * SCALE}px system-ui, sans-serif`;
+  ctx.fillText(subText, rightTextX, iconY + iconSize / 2 + 16 * SCALE);
 
   // Header divider
   y += headerH;
@@ -127,61 +152,6 @@ export async function exportReportAsImage(opts: ExportOptions): Promise<void> {
 
   // ---- Report ----
   ctx.drawImage(reportCanvas, PAD, y);
-  y += reportCanvas.height + 8 * SCALE;
-
-  // Footer divider
-  ctx.beginPath();
-  ctx.moveTo(PAD, y);
-  ctx.lineTo(contentWidth - PAD, y);
-  ctx.stroke();
-  y += 16 * SCALE;
-
-  // ---- Footer left ----
-  let fx = PAD;
-  const footerAvatarSize = 32 * SCALE;
-  if (avatarDataUrl) {
-    try {
-      const avatarImg = await loadImg(avatarDataUrl);
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(fx + footerAvatarSize / 2, y + footerAvatarSize / 2, footerAvatarSize / 2, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(avatarImg, fx, y, footerAvatarSize, footerAvatarSize);
-      ctx.restore();
-      fx += footerAvatarSize + 10 * SCALE;
-    } catch { /* skip */ }
-  }
-
-  ctx.fillStyle = "#1a1a2e";
-  ctx.font = `600 ${13 * SCALE}px system-ui, sans-serif`;
-  ctx.fillText(`由 ${nickname} 生成`, fx, y + 14 * SCALE);
-
-  ctx.fillStyle = "#6b7280";
-  ctx.font = `${11 * SCALE}px system-ui, sans-serif`;
-  ctx.fillText("Powered by Bangumi 品味分析器", fx, y + 32 * SCALE);
-
-  // ---- Footer right (QR) ----
-  const qrSize = 64 * SCALE;
-  const qrX = contentWidth - PAD - qrSize;
-  const qrY = y - 4 * SCALE;
-  try {
-    const qrImg = await loadImg(qrDataUrl);
-    ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
-  } catch { /* skip */ }
-
-  // Text left of QR
-  ctx.fillStyle = "#6b7280";
-  ctx.font = `500 ${12 * SCALE}px system-ui, sans-serif`;
-  const promoText = "扫码生成你的品味报告";
-  const promoW = ctx.measureText(promoText).width;
-  ctx.fillText(promoText, qrX - promoW - 12 * SCALE, qrY + 24 * SCALE);
-
-  ctx.fillStyle = "#9ca3af";
-  ctx.font = `${10 * SCALE}px system-ui, sans-serif`;
-  const subText = "bangumi-taste";
-  const subW = ctx.measureText(subText).width;
-  ctx.fillText(subText, qrX - subW - 12 * SCALE, qrY + 44 * SCALE);
 
   // ---- Download ----
   canvas.toBlob((blob) => {
