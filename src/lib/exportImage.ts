@@ -60,7 +60,8 @@ export async function exportReportAsImage(opts: ExportOptions): Promise<void> {
   const contentWidth = rw + PAD * 2;
   // Header: avatar/QR fill the row, 3 text lines beside avatar
   const iconSize = 64 * SCALE; // avatar & QR both this size
-  const headerH = iconSize + 16 * SCALE; // icon + top/bottom padding
+  const qrLabelH = 18 * SCALE; // space for "扫码尝试" below QR
+  const headerH = iconSize + qrLabelH + 12 * SCALE; // icon + label + padding
   const totalH = PAD + headerH + reportCanvas.height + PAD;
 
   const canvas = document.createElement("canvas");
@@ -126,19 +127,12 @@ export async function exportReportAsImage(opts: ExportOptions): Promise<void> {
     ctx.drawImage(qrImg, qrX, iconY, iconSize, iconSize);
   } catch { /* skip */ }
 
-  // ---- Text left of QR: "扫码生成你的品味报告" + "bangumi-taste" ----
-  const promoText = "扫码生成你的品味报告";
-  const subText = "bangumi-taste";
-  ctx.fillStyle = "#6b7280";
-  ctx.font = `${13 * SCALE}px system-ui, sans-serif`;
-  const promoW = ctx.measureText(promoText).width;
-  const subW = ctx.measureText(subText).width;
-  const rightTextW = Math.max(promoW, subW);
-  const rightTextX = qrX - rightTextW - 16 * SCALE;
-  ctx.fillText(promoText, rightTextX, iconY + iconSize / 2 - 2 * SCALE);
+  // ---- "扫码尝试" centered below QR ----
   ctx.fillStyle = "#9ca3af";
-  ctx.font = `${11 * SCALE}px system-ui, sans-serif`;
-  ctx.fillText(subText, rightTextX, iconY + iconSize / 2 + 16 * SCALE);
+  ctx.font = `${10 * SCALE}px system-ui, sans-serif`;
+  const qrLabel = "扫码尝试";
+  const qrLabelW = ctx.measureText(qrLabel).width;
+  ctx.fillText(qrLabel, qrX + (iconSize - qrLabelW) / 2, iconY + iconSize + 14 * SCALE);
 
   // Header divider
   y += headerH;

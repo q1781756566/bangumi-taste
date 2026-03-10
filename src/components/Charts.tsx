@@ -154,10 +154,10 @@ export default function Charts({ collections, analysis, type }: Props) {
 
       {/* Genre Preferences Radar */}
       {genreData.length > 0 && (
-        <section className="bg-card border border-card-border rounded-2xl p-6">
-          <h2 className="text-lg font-bold mb-4">类型偏好</h2>
+        <section className="bg-card border border-card-border rounded-2xl p-6 max-sm:px-2">
+          <h2 className="text-lg font-bold mb-4 max-sm:px-4">类型偏好</h2>
           <ResponsiveContainer width="100%" height={300}>
-            <RadarChart data={genreData}>
+            <RadarChart data={genreData} outerRadius="65%">
               <PolarGrid stroke="var(--card-border)" />
               <PolarAngleAxis dataKey="genre" tick={{ fontSize: 11 }} />
               <PolarRadiusAxis tick={false} axisLine={false} domain={[0, 100]} />
