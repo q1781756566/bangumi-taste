@@ -52,7 +52,7 @@ export default function TasteReport({ analysis, username, type }: Props) {
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-primary">
-              {analysis.ratingAnalysis.median}
+              {Math.round(analysis.ratingAnalysis.median)}
             </div>
             <div className="text-xs text-muted">中位数</div>
           </div>

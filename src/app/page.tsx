@@ -12,6 +12,20 @@ import { callLLM } from "@/lib/llm";
 
 const Charts = dynamic(() => import("@/components/Charts"), { ssr: false });
 
+/** Override LLM-generated average/median with precise front-end calculation */
+function fixRatingStats(analysis: TasteAnalysis, collections: BangumiCollection[]): TasteAnalysis {
+  const rated = collections.filter((c) => c.rate > 0).map((c) => c.rate);
+  if (rated.length === 0) return analysis;
+  const avg = rated.reduce((a, b) => a + b, 0) / rated.length;
+  const sorted = [...rated].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  return {
+    ...analysis,
+    ratingAnalysis: { ...analysis.ratingAnalysis, average: avg, median },
+  };
+}
+
 type Stage = "input" | "fetching" | "analyzing" | "done" | "error";
 type AuthMode = "username" | "token";
 type TabKey = "anime" | "game";
@@ -345,18 +359,20 @@ export default function Home() {
           : null,
       ]);
 
-      setAnimeAnalysis(animeResult);
-      setGameAnalysis(gameResult);
+      const fixedAnime = animeResult ? fixRatingStats(animeResult, anime) : null;
+      const fixedGame = gameResult ? fixRatingStats(gameResult, games) : null;
+      setAnimeAnalysis(fixedAnime);
+      setGameAnalysis(fixedGame);
       setStage("done");
 
-      setActiveTab(pickDefaultTab(animeResult, gameResult));
+      setActiveTab(pickDefaultTab(fixedAnime, fixedGame));
 
       // Cache
       saveCachedResult(resolvedUsername, {
         user: userData,
         animeCollections: anime,
         gameCollections: games,
-        animeAnalysis: animeResult,
+        animeAnalysis: fixedAnime,
         gameAnalysis: gameResult,
         timestamp: Date.now(),
       });
