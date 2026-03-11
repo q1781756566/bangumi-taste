@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bangumi Taste Analyzer
+
+[中文文档](./README_CN.md)
+
+An AI-powered taste analysis tool for [Bangumi](https://bgm.tv) users. It fetches your anime/game collection data and generates a personalized taste report using LLM analysis.
+
+**Live Demo:** https://q1781756566.github.io/bangumi-taste/
+
+## Features
+
+- **Collection Analysis** — Fetch anime and game collections from Bangumi via username or access token
+- **AI Taste Report** — Generate personalized taste analysis powered by Claude / OpenAI / custom LLM providers
+- **Interactive Charts** — Visualize genre preferences (radar), rating distribution (bar), collection status (pie), and activity timeline
+- **Taste Tags** — Get labeled taste traits with descriptions (e.g. "narrative-driven", "aesthete")
+- **Hidden Gems & Recommendations** — Discover underrated favorites and get tailored suggestions
+- **Export as Image** — Download your report as a PNG with avatar, branding, and QR code
+- **Category Selection** — Choose to analyze anime, games, or both independently
+- **Auto Model List** — Fetch available models from custom LLM providers automatically
+- **Result Caching** — Analysis results are cached locally for instant revisits
+- **Mobile Responsive** — Fully responsive design with mobile-optimized tooltips and charts
+
+## Tech Stack
+
+- **Framework:** Next.js 16 + React 19 + TypeScript
+- **Styling:** Tailwind CSS v4
+- **Charts:** Recharts
+- **LLM:** Anthropic SDK / OpenAI SDK / Custom API
+- **Export:** html-to-image + Canvas API + qrcode
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- A Bangumi account
+- An LLM API key (Claude, OpenAI, or compatible provider)
+
+### Install & Run
 
 ```bash
+git clone https://github.com/q1781756566/bangumi-taste.git
+cd bangumi-taste
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Select analysis category (anime / game)
+2. Enter your Bangumi numeric username (not nickname)
+3. Configure your LLM provider and API key
+4. Click "开始分析" to generate your taste report
+5. Browse charts, tags, recommendations, and export as image
 
-## Learn More
+## Deployment
 
-To learn more about Next.js, take a look at the following resources:
+The project is configured for GitHub Pages deployment via GitHub Actions. Every push to `main` triggers an automatic build and deploy.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+To deploy on other platforms:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run build
+```
 
-## Deploy on Vercel
+The static output will be in the `out/` directory.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
