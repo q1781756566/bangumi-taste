@@ -512,7 +512,7 @@ export default function Home() {
             disabled={!inputValue.trim() || !(bgmSettings.analyzeAnime || bgmSettings.analyzeGame) || copyingPrompt}
             className="text-xs text-muted hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
-            {copyingPrompt ? "获取数据中..." : promptCopied ? "已复制到剪贴板 ✓" : "没有 API？复制 Prompt 去网页端生成"}
+            {copyingPrompt ? "获取数据中..." : promptCopied ? "已复制到剪贴板 ✓" : "没有 API？复制 Prompt 发送给任意 AI 即可"}
           </button>
         </div>
 
