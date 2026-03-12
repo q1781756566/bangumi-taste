@@ -15,7 +15,9 @@ An AI-powered taste analysis tool for [Bangumi](https://bgm.tv) users. It fetche
 - **Hidden Gems & Recommendations** — Discover underrated favorites and get tailored suggestions
 - **Export as Image** — Download your report as a PNG with avatar, branding, and QR code
 - **Category Selection** — Choose to analyze anime, games, or both independently
+- **No API? Copy Prompt** — No API key needed: copy a ready-made prompt to use in ChatGPT / Claude web for a readable report
 - **Auto Model List** — Fetch available models from custom LLM providers automatically
+- **Precise Rating Stats** — Average and median scores are computed on the client side for accuracy (not relying on LLM math)
 - **Result Caching** — Analysis results are cached locally for instant revisits
 - **Mobile Responsive** — Fully responsive design with mobile-optimized tooltips and charts
 
@@ -33,7 +35,7 @@ An AI-powered taste analysis tool for [Bangumi](https://bgm.tv) users. It fetche
 
 - Node.js 18+
 - A Bangumi account
-- An LLM API key (Claude, OpenAI, or compatible provider)
+- An LLM API key (Claude, OpenAI, or compatible provider) — or use the "Copy Prompt" feature without one
 
 ### Install & Run
 
