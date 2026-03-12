@@ -129,3 +129,50 @@ ${COMMON_REQUIREMENTS}
 - 重点关注：游戏类型偏好（RPG/动作/策略/视觉小说等）、平台偏好、玩法风格（硬核/休闲）、叙事vs玩法倾向
 - 推荐的作品必须是游戏`;
 }
+
+// ---- Readable (non-JSON) prompts for manual use in web LLM chat ----
+
+const READABLE_FORMAT = `请以结构化的中文文本生成品味报告，包含以下部分：
+
+1. **品味总结**（200-300字，用第二人称"你"描述）
+2. **品味标签**（4-6个标签，每个附一句简短解释）
+3. **类型偏好分析**（列出 6-10 个主要类型，说明偏好程度和原因）
+4. **评分习惯分析**（评分倾向是严格还是宽松，有什么特点）
+5. **独特品味特征**（3-5 条）
+6. **冷门佳作**（3-5 部被低估的收藏作品，说明理由）
+7. **个性化推荐**（5-8 部未看过/未玩过的作品，说明推荐理由）
+
+要求：
+- 分析要有洞察力，不要泛泛而谈
+- 所有文本用中文
+- 使用 Markdown 格式，方便阅读`;
+
+export function buildReadableAnimePrompt(
+  username: string,
+  collections: BangumiCollection[],
+): string {
+  const summary = summarizeCollections(collections, "动画");
+
+  return `你是一位资深的动画评论家和品味分析师。请根据以下 Bangumi 用户 "${username}" 的动画收藏数据，深入分析其动画品味。
+
+${summary}
+
+${READABLE_FORMAT}
+- 重点关注：题材偏好、制作公司偏好、叙事风格（轻松日常/严肃剧情/实验性）、视觉风格偏好
+- 推荐的作品必须是动画`;
+}
+
+export function buildReadableGamePrompt(
+  username: string,
+  collections: BangumiCollection[],
+): string {
+  const summary = summarizeCollections(collections, "游戏");
+
+  return `你是一位资深的游戏评论家和品味分析师。请根据以下 Bangumi 用户 "${username}" 的游戏收藏数据，深入分析其游戏品味。
+
+${summary}
+
+${READABLE_FORMAT}
+- 重点关注：游戏类型偏好（RPG/动作/策略/视觉小说等）、平台偏好、玩法风格（硬核/休闲）、叙事vs玩法倾向
+- 推荐的作品必须是游戏`;
+}

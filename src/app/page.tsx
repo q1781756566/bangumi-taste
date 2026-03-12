@@ -7,7 +7,7 @@ import BangumiSettings from "@/components/BangumiSettings";
 import TasteReport from "@/components/TasteReport";
 import Recommendations from "@/components/Recommendations";
 import type { BangumiCollection, BangumiCollectionResponse, BangumiUser, LLMConfig, TasteAnalysis } from "@/lib/types";
-import { buildAnimeAnalysisPrompt, buildGameAnalysisPrompt } from "@/lib/prompts";
+import { buildAnimeAnalysisPrompt, buildGameAnalysisPrompt, buildReadableAnimePrompt, buildReadableGamePrompt } from "@/lib/prompts";
 import { callLLM } from "@/lib/llm";
 
 const Charts = dynamic(() => import("@/components/Charts"), { ssr: false });
@@ -144,6 +144,8 @@ export default function Home() {
   const [fromCache, setFromCache] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("anime");
   const [exporting, setExporting] = useState(false);
+  const [copyingPrompt, setCopyingPrompt] = useState(false);
+  const [promptCopied, setPromptCopied] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
   const pickDefaultTab = (anime: TasteAnalysis | null, game: TasteAnalysis | null): TabKey => {
@@ -382,6 +384,52 @@ export default function Home() {
     }
   };
 
+  const handleCopyPrompt = async () => {
+    const { authMode, username, token: bgmToken } = bgmSettings;
+    if (authMode === "username" && !username.trim()) return;
+    if (authMode === "token" && !bgmToken.trim()) return;
+
+    setCopyingPrompt(true);
+    setPromptCopied(false);
+    setError("");
+
+    const token = authMode === "token" ? bgmToken.trim() : undefined;
+
+    try {
+      let resolvedUsername: string;
+      if (authMode === "token") {
+        const userData: BangumiUser = await bgmFetch("/v0/me", token);
+        resolvedUsername = userData.username;
+      } else {
+        resolvedUsername = username.trim();
+      }
+
+      const prompts: string[] = [];
+
+      if (bgmSettings.analyzeAnime) {
+        const anime = await fetchAllCollections(resolvedUsername, 2, token);
+        if (anime.length > 0) prompts.push(buildReadableAnimePrompt(resolvedUsername, anime));
+      }
+      if (bgmSettings.analyzeGame) {
+        const games = await fetchAllCollections(resolvedUsername, 4, token);
+        if (games.length > 0) prompts.push(buildReadableGamePrompt(resolvedUsername, games));
+      }
+
+      if (prompts.length === 0) {
+        throw new Error("所选类别没有收藏数据");
+      }
+
+      await navigator.clipboard.writeText(prompts.join("\n\n---\n\n"));
+      setPromptCopied(true);
+      setTimeout(() => setPromptCopied(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setStage("error");
+    } finally {
+      setCopyingPrompt(false);
+    }
+  };
+
   const isLoading = stage === "fetching" || stage === "analyzing";
   const hasAnime = animeAnalysis !== null;
   const hasGame = gameAnalysis !== null;
@@ -446,7 +494,7 @@ export default function Home() {
         </div>
 
         {/* Action Button */}
-        <div className="flex justify-center mb-8">
+        <div className="flex flex-col items-center gap-3 mb-8">
           <button
             onClick={() => handleAnalyze(false)}
             disabled={!canSubmit || !llmConfig.apiKey}
@@ -458,6 +506,13 @@ export default function Home() {
                 分析中...
               </span>
             ) : "开始分析"}
+          </button>
+          <button
+            onClick={handleCopyPrompt}
+            disabled={!inputValue.trim() || !(bgmSettings.analyzeAnime || bgmSettings.analyzeGame) || copyingPrompt}
+            className="text-xs text-muted hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {copyingPrompt ? "获取数据中..." : promptCopied ? "已复制到剪贴板 ✓" : "没有 API？复制 Prompt 去网页端生成"}
           </button>
         </div>
 
